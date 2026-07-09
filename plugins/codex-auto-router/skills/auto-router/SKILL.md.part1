@@ -1,0 +1,73 @@
+---
+name: auto-router
+description: Automatically decompose a coding, repository, review, debugging, testing, or implementation request and route bounded subtasks to GPT-5.6 Terra or Luna subagents. Invoke this when the user wants to state only the desired outcome without choosing agents, models, roles, or parallelism. The active Sol or Terra parent owns planning, decisions, integration, and final verification.
+---
+
+# Auto Router: Sol/Terra parent → Terra/Luna subagents
+
+The user supplies only the desired outcome. Automatically decide whether to delegate, how to split the work, which custom agent to use, and how many agents are justified.
+
+## Non-negotiable user experience
+
+- Never ask the user to assign agents, choose child models, define parallel work, or write delegation prompts.
+- Do not require the user to know the custom-agent names.
+- Infer the routing from the requested outcome, repository state, risk, and scope.
+- Ask a clarification only when the actual product requirement is irreducibly ambiguous and a safe best-effort path does not exist. Never ask a clarification merely about orchestration.
+- Keep the orchestration plan internal. In the final answer, provide only a short delegation summary when delegation materially affected the result.
+
+## Parent responsibility
+
+The active parent thread remains the owner of understanding the request, defining completion, selecting and briefing children, architecture and product decisions, resolving conflicts, integrating edits, final validation, and the user-facing answer.
+
+This skill cannot switch the active parent model. It is designed for a parent already running as GPT-5.6 Sol or GPT-5.6 Terra. Never spawn a Sol child. Prefer named custom agents when installed. Otherwise use the closest built-in subagent and explicitly request the Terra or Luna model and reasoning effort in the child assignment.
+
+## Infer permissions from the request
+
+- Read-only: analyze, inspect, review, explain, find, audit, compare, plan, identify issues.
+- Write allowed: implement, fix, update, refactor, migrate, add, remove, change.
+- Verification-only: test, reproduce, lint, type-check, benchmark, confirm.
+- Mixed: investigate then fix, review and resolve, implement and validate.
+
+Explicit user constraints override inference. If intent is genuinely unclear, start read-only and return findings rather than making speculative edits.
+
+## Decide the delegation level automatically
+
+Use the smallest useful team.
+
+- Level 0 — parent only: trivial, tightly coupled, one known file and one obvious edit, small explanation, single deterministic command.
+- Level 1 — one specialist: bounded search, isolated trace, focused review, narrow implementation, or independent verification.
+- Level 2 — two or three specialists: ordinary cross-file bugs, features, PR reviews, and subsystem analysis.
+- Level 3 — three or four specialists: repository-wide audits, multi-layer features, migrations, security-sensitive work, or broad issue discovery.
+
+Limits:
+
+- At most four read-only children concurrently.
+- At most two write children concurrently, only with disjoint file and symbol ownership.
+- Nesting depth stays at one; children never spawn children.
+- Never spawn an agent only to reach a count.
+
+## Automatic model and role routing
+
+Use these logical routing profiles. If a matching custom agent exists, use it. Otherwise spawn the closest built-in agent and include the requested model and reasoning effort in the task contract.
+
+### luna_scanner — Luna / low / read-only
+
+Use for deterministic inventories, exact searches, extraction, classification, checklist inspection, and compact repository maps.
+
+### luna_verifier — Luna / medium / verification
+
+Use for targeted tests, lint, type checks, builds, reproduction of known command failures, and independent confirmation of specific claims. Record exact pass/fail evidence without repairing failures.
+
+### terra_explorer — Terra / medium / read-only
+
+Use for cross-file control flow, data flow, state transitions, dependencies, impact analysis, ambiguous root-cause investigation, and ownership-boundary mapping.
+
+### terra_reviewer — Terra / high / read-only
+
+Use for correctness, security, authorization, concurrency, data integrity, migrations, compatibility, regressions, edge cases, missing tests, and challenging proposed fixes.
+
+### terra_worker — Terra / medium / write
+
+Use for one bounded feature slice or fix with explicit path and symbol ownership and directly related tests. Avoid broad refactors and overlapping edits.
+
+Escalate Luna work to Terra when ambiguity, cross-file reasoning, or consequential judgment appears. Return Terra conflicts, architecture questions, security decisions, and public-behavior choices to the parent. The parent independently inspects decisive evidence before accepting high-impact findings or changes.
