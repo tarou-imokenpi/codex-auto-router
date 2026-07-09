@@ -1,0 +1,9 @@
+# Install as ~/.codex/sol-parent.config.toml and launch with:
+#   codex --profile sol-parent
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+
+[agents]
+max_threads = 6
+max_depth = 1
+interrupt_message = true
