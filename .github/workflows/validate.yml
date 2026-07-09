@@ -1,0 +1,27 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate JSON and TOML
+        run: |
+          python - <<'PY'
+          import json, pathlib, tomllib
+          for path in pathlib.Path('.').rglob('*.json'):
+              json.loads(path.read_text(encoding='utf-8'))
+              print('json ok:', path)
+          for path in pathlib.Path('.').rglob('*.toml'):
+              tomllib.loads(path.read_text(encoding='utf-8'))
+              print('toml ok:', path)
+          PY
+      - name: Check shell syntax
+        run: bash -n scripts/*.sh
