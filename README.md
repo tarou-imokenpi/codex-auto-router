@@ -30,7 +30,7 @@ codex plugin marketplace add tarou-imokenpi/codex-auto-router
 
 その後、Codex Appの**Plugins**またはCodex CLIの`/plugins`から**Auto Router**をインストールし、新しいタスクを開始してください。
 
-プラグインだけでも、Skillが子モデルと役割を指定してサブエージェントを起動します。モデルと役割をより強く固定したい場合は、任意でCustom Agentsも一度だけインストールします。
+プラグインだけでも、Skillが子モデルと役割を指定してサブエージェントを起動します。モデルと役割をCustom Agent定義で固定したい場合は、次の追加インストールを一度だけ実行します。
 
 ### Custom Agentsの追加インストール
 
@@ -39,7 +39,7 @@ macOS / Linux:
 ```bash
 git clone https://github.com/tarou-imokenpi/codex-auto-router.git
 cd codex-auto-router
-./scripts/install-agents.sh
+bash ./scripts/install-agents.sh
 ```
 
 Windows PowerShell:
@@ -48,12 +48,6 @@ Windows PowerShell:
 git clone https://github.com/tarou-imokenpi/codex-auto-router.git
 cd codex-auto-router
 ./scripts/install-agents.ps1
-```
-
-ローカルフォルダからプラグインとCustom Agentsをまとめて入れる場合:
-
-```bash
-./scripts/install-local.sh
 ```
 
 ## 自動ルーティング
@@ -95,7 +89,7 @@ plugins/codex-auto-router/             Codex Appプラグイン
   skills/auto-router/SKILL.md
 agents/                                任意のCustom Agent定義
 profiles/                              Sol/Terra親のCLIプロファイル例
-scripts/                               インストーラー
+scripts/                               Custom Agentインストーラー
 examples/                              最小プロンプト例
 ```
 
@@ -105,7 +99,11 @@ examples/                              最小プロンプト例
 codex plugin marketplace upgrade tarou-imokenpi-plugins
 ```
 
-Custom Agentsを利用している場合は、更新後に`./scripts/install-agents.sh`を再実行してください。同名ファイルはタイムスタンプ付きでバックアップされます。
+Custom Agentsを利用している場合は、更新後に次を再実行してください。同名ファイルはタイムスタンプ付きでバックアップされます。
+
+```bash
+bash ./scripts/install-agents.sh
+```
 
 ## 注意
 
