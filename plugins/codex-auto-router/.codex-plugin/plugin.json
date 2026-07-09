@@ -1,0 +1,38 @@
+{
+  "name": "codex-auto-router",
+  "version": "2.1.0",
+  "description": "Automatically decomposes Codex tasks and routes bounded work from a Sol or Terra parent to Terra or Luna subagents.",
+  "author": {
+    "name": "tarou-imokenpi",
+    "url": "https://github.com/tarou-imokenpi"
+  },
+  "homepage": "https://github.com/tarou-imokenpi/codex-auto-router",
+  "repository": "https://github.com/tarou-imokenpi/codex-auto-router",
+  "keywords": [
+    "codex",
+    "subagents",
+    "orchestration",
+    "terra",
+    "luna",
+    "repository"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Auto Router",
+    "shortDescription": "Automatically assign Terra and Luna subagents",
+    "longDescription": "Mention Auto Router and describe only the outcome. The active Sol or Terra parent decides the decomposition, child models, roles, parallelism, validation, and final integration.",
+    "developerName": "tarou-imokenpi",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/tarou-imokenpi/codex-auto-router",
+    "defaultPrompt": [
+      "Analyze this repository thoroughly and prioritize evidence-backed issue candidates. Do not change files.",
+      "Investigate and fix this bug, then run the relevant checks.",
+      "Review this branch against the base branch and report only material findings."
+    ]
+  },
+  "license": "MIT"
+}
