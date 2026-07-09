@@ -1,0 +1,20 @@
+{
+  "name": "tarou-imokenpi-plugins",
+  "interface": {
+    "displayName": "tarou-imokenpi Plugins"
+  },
+  "plugins": [
+    {
+      "name": "codex-auto-router",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-auto-router"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
