@@ -32,6 +32,7 @@ jobs:
               'terra-explorer.toml': ('terra_explorer', 'gpt-5.6-terra'),
               'terra-reviewer.toml': ('terra_reviewer', 'gpt-5.6-terra'),
               'terra-worker.toml': ('terra_worker', 'gpt-5.6-terra'),
+              'spark-scanner.toml': ('spark_scanner', 'gpt-5.3-codex-spark'),
               'luna-scanner.toml': ('luna_scanner', 'gpt-5.6-luna'),
               'luna-verifier.toml': ('luna_verifier', 'gpt-5.6-luna'),
           }
@@ -42,6 +43,12 @@ jobs:
               assert data['name'] == name, (path, data.get('name'), name)
               assert data['model'] == model, (path, data.get('model'), model)
               print('agent routing ok:', name, '->', model)
+
+          skill = pathlib.Path('plugins/codex-auto-router/skills/auto-router/SKILL.md').read_text(encoding='utf-8')
+          assert 'Prefer the exact `spark_scanner`' in skill
+          assert 'use the exact `luna_scanner`' in skill
+          assert 'do not fall back from Spark to a generic agent' in skill.lower()
+          print('scanner fallback policy ok')
 
           for path in pathlib.Path('profiles').glob('*.toml'):
               data = tomllib.loads(path.read_text(encoding='utf-8'))
