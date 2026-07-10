@@ -1,6 +1,6 @@
 # Thread and subagent contract templates
 
-Replace every bracketed value. The parent creates all top-level threads.
+Replace every bracketed value. The parent creates all top-level threads and reviews every completed thread before accepting or integrating its result.
 
 ## Terra thread
 
@@ -19,6 +19,7 @@ Permissions: [read-only | explicit workspace-write ownership]
 Child policy: Luna subagents are allowed only for bounded deterministic scanning, extraction, or verification in this workstream. Do not create Terra subagents or additional threads. Do not delegate source edits to Luna.
 Required evidence: [paths, symbols, commands, outputs, reproduction]
 Output: Use the requested result schema and include WORKSTREAM.
+Parent review handoff: Provide the decisive evidence map, changed files or outputs, tests and commands, limitations, unresolved risks, and the exact evidence for every done criterion. Completion means ready for parent review, not approved.
 Done criteria: [observable completion]
 Failure rule: Return partial or blocked; escalate architecture, conflicts, and cross-scope requirements to the parent.
 ```
@@ -39,9 +40,30 @@ Permissions: [read-only | verification-only]
 Child policy: No subagents and no additional threads. Escalate ambiguity to the parent.
 Required evidence: [paths, lines, commands, exit status]
 Output: Use the requested result schema and include WORKSTREAM.
+Parent review handoff: Provide the decisive evidence, completed checks, counts or outputs, sampling notes where relevant, limitations, and exact evidence for every done criterion. Completion means ready for parent review, not approved.
 Done criteria: [observable list, count, table, or completed checks]
 Failure rule: Return partial or blocked; never infer missing facts.
 ```
+
+## Parent review checklist for completed threads
+
+The parent must perform this review personally before integrating a thread result:
+
+```text
+Thread: [workstream]
+Original contract checked: yes | no
+Scope and exclusions respected: yes | no
+Done criteria independently verified: yes | no
+Decisive evidence inspected directly: yes | no
+Diff and ownership reviewed, if applicable: yes | no | not-applicable
+Tests or commands reviewed/rerun: yes | no | not-applicable
+Contradictions or integration conflicts resolved: yes | no | not-applicable
+Decision: accepted | revision-required | rejected
+Reason: [concise evidence-backed reason]
+Correction request, if any: [bounded follow-up]
+```
+
+Only `accepted` results may be integrated or cited as established findings. Review a corrected result again before acceptance. The parent acceptance decision cannot be delegated.
 
 ## Direct Luna scanner subagent
 
