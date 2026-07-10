@@ -5,24 +5,34 @@ The root parent creates all top-level agent threads, verifies their exact custom
 ## Model-routing preflight
 
 ```text
-Required agent name: [terra_explorer | terra_reviewer | terra_worker | luna_scanner | luna_verifier]
-Expected model: [gpt-5.6-terra | gpt-5.6-luna]
-Agent available in current session: yes | no
-Agent TOML pins expected model: yes | no
+Requested role: [Terra exploration | Terra review | Terra implementation | scan | verification]
+Primary agent name: [terra_explorer | terra_reviewer | terra_worker | spark_scanner | luna_verifier]
+Primary expected model: [gpt-5.6-terra | gpt-5.3-codex-spark | gpt-5.6-luna]
+Primary agent available in current session: yes | no
+Primary model available to account/session: yes | no | unknown
+Task is text-only and bounded for Spark: yes | no | not-applicable
+Scanner fallback agent: [luna_scanner | not-applicable]
+Fallback expected model: [gpt-5.6-luna | not-applicable]
 Nested child required: yes | no
 Configured agents.max_depth: [number]
 Configured agents.max_threads: [number or unknown]
-Decision: spawn exact named agent | parent-only | setup-required
+Decision: spawn exact primary | use exact Luna scanner fallback | parent-only | setup-required
+Fallback reason: [Spark unavailable | Spark unsupported | non-text input | context too large | Spark start failure | Spark model mismatch | preview capacity/rate limit | not-applicable]
 ```
 
-Never use a generic agent as a model-routing fallback.
+Never use a generic, inherited Sol, or unnamed agent as a model-routing fallback.
 
 ## Root parent to Terra agent
 
 ```text
 AGENT_NAME=[terra_explorer | terra_reviewer | terra_worker]
 EXPECTED_MODEL=gpt-5.6-terra
-ALLOW_LUNA_CHILDREN=[true | false]
+ALLOW_SCANNER_CHILD=[true | false]
+ALLOW_VERIFIER_CHILD=[true | false]
+
+Scanner child policy: When ALLOW_SCANNER_CHILD=true and agents.max_depth >= 2, prefer exact `spark_scanner` for bounded text-only scanning. If Spark is unavailable, unsupported, unsuitable, fails to start, or surfaces an unexpected model, use exact `luna_scanner` and record the fallback reason.
+Verifier child policy: When ALLOW_VERIFIER_CHILD=true and agents.max_depth >= 2, use exact `luna_verifier`.
+Never spawn generic, Sol, or Terra children.
 
 Objective: [one observable workstream outcome]
 Owned scope: [exclusive paths, modules, symbols, issue range, or domain]
@@ -35,49 +45,74 @@ BASE_COMMIT=[commit SHA | not-applicable]
 WORKTREE_PATH=[assigned path | not-applicable]
 WORKTREE_BRANCH=[assigned branch | not-applicable]
 
-Child policy: When ALLOW_LUNA_CHILDREN=true and agents.max_depth >= 2, spawn only exact `luna_scanner` or `luna_verifier` custom agents. Never spawn generic, Sol, or Terra children. Otherwise spawn no child.
 Git policy: When a worktree is assigned, verify path, branch, and base before work. Do not merge or rebase. Commit only bounded changes.
 Required evidence: [paths, symbols, commands, outputs, reproduction]
-Parent review handoff: report actual agent name/model when surfaced, evidence map, worktree metadata, final commit, changed files, tests, dirty state, limitations, and risks.
+Parent review handoff: report actual agent/model identities, scanner fallback reason when applicable, evidence map, worktree metadata, final commit, changed files, tests, dirty state, limitations, and risks.
 Done criteria: [observable completion]
-Failure rule: Return partial or blocked instead of using an unavailable or inherited-model fallback.
+Failure rule: Return partial or blocked instead of using a generic or inherited-model fallback.
 ```
 
-## Root parent to Luna agent
+## Scanner assignment: Spark primary, Luna fallback
+
+### Primary Spark contract
 
 ```text
-AGENT_NAME=[luna_scanner | luna_verifier]
-EXPECTED_MODEL=gpt-5.6-luna
+AGENT_NAME=spark_scanner
+EXPECTED_MODEL=gpt-5.3-codex-spark
+FALLBACK_AGENT=luna_scanner
+FALLBACK_MODEL=gpt-5.6-luna
 
-Objective: [exact deterministic result]
+Objective: [exact deterministic text-only result]
 Scope: [fixed paths, records, commands, or batch]
 Exclusions: [areas to ignore]
 Inputs: [known facts and constraints]
-Permissions: [read-only | verification-only]
+Permissions: Read-only
 Child policy: No children.
-Required evidence: [paths, lines, commands, exit status]
-Parent review handoff: report actual agent name/model when surfaced, completed checks or outputs, limitations, and evidence for every done criterion.
-Done criteria: [list, count, table, or completed checks]
+Spark suitability: text-only=yes; bounded context=yes; account/session availability=[yes | unknown]
+Required evidence: [paths, symbols, lines, commands]
+Parent review handoff: report actual agent/model, outputs, commands, limitations, and evidence for every done criterion.
+Done criteria: [list, count, table, classification, or compact map]
+Failure rule: Return unsupported, partial, or blocked if Spark is unavailable or unsuitable. Do not spawn the fallback yourself.
+```
+
+### Parent fallback contract
+
+Use this only after the root or Terra parent records why Spark was skipped or failed.
+
+```text
+AGENT_NAME=luna_scanner
+EXPECTED_MODEL=gpt-5.6-luna
+REPLACES_AGENT=spark_scanner
+FALLBACK_REASON=[Spark unavailable | unsupported model | non-text input | context too large | start failure | model mismatch | preview capacity/rate limit]
+
+Objective: [same bounded result requested from Spark]
+Scope: [same scope or explicitly corrected scope]
+Exclusions: [areas to ignore]
+Inputs: [known facts, plus any reviewed Spark failure information]
+Permissions: Read-only
+Child policy: No children.
+Required evidence: [paths, symbols, lines, commands]
+Parent review handoff: report actual agent/model, fallback reason, outputs, limitations, and evidence for every done criterion.
+Done criteria: [list, count, table, classification, or compact map]
 Failure rule: Return partial or blocked; never spawn a generic replacement or infer missing facts.
 ```
 
-## Terra agent to Luna child
+Do not silently merge partial Spark output with Luna output. The parent decides whether Spark output is discarded, replaced, or retained as separately reviewed evidence.
+
+## Verification assignment
 
 ```text
-PARENT_AGENT=[terra_explorer | terra_reviewer | terra_worker]
-PARENT_EXPECTED_MODEL=gpt-5.6-terra
-AGENT_NAME=[luna_scanner | luna_verifier]
+AGENT_NAME=luna_verifier
 EXPECTED_MODEL=gpt-5.6-luna
-MAX_DEPTH_REQUIREMENT=2
 
-Objective: [bounded local search, extraction, or verification]
-Scope: [subset of the Terra workstream]
-Worktree: [same path as Terra parent | not-applicable]
-Permissions: [read-only | verification-only]
+Objective: [targeted test, lint, type check, build, or reproduction]
+Scope: [fixed paths and commands]
+Permissions: Verification-only
 Child policy: No children.
-Required evidence: [paths, commands, outputs]
-Done criteria: [observable result]
-Failure rule: If the exact Luna role cannot be spawned, return control to the Terra parent; never spawn a generic or inherited-model agent.
+Required evidence: exact commands, exit status, and concise failure evidence
+Parent review handoff: report actual agent/model, completed checks, generated state, limitations, and done-criteria evidence.
+Done criteria: [all requested checks ran or a concrete blocker is reported]
+Failure rule: Never convert an unrun check into a pass.
 ```
 
 ## Parent worktree setup
@@ -104,6 +139,10 @@ Workstream: [name]
 Expected custom agent: [name]
 Expected model: [model]
 Actual agent/model verified: yes | no
+Scanner primary: [spark_scanner | not-applicable]
+Scanner fallback used: yes | no | not-applicable
+Fallback reason reviewed and valid: yes | no | not-applicable
+Partial Spark output handled explicitly: yes | no | not-applicable
 Original contract checked: yes | no
 Scope and exclusions respected: yes | no
 Done criteria independently verified: yes | no
