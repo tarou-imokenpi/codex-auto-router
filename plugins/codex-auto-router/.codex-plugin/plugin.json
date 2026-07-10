@@ -1,7 +1,7 @@
 {
   "name": "codex-auto-router",
-  "version": "2.2.1",
-  "description": "Automatically decomposes Codex tasks across threads and routes bounded work from a Sol or Terra parent to Terra or Luna workers, with mandatory parent review before integration.",
+  "version": "2.2.2",
+  "description": "Automatically decomposes Codex tasks across threads, isolates potentially conflicting work with Git worktrees, and routes bounded work from a Sol or Terra parent to Terra or Luna workers with mandatory parent review before integration.",
   "author": {
     "name": "tarou-imokenpi",
     "url": "https://github.com/tarou-imokenpi"
@@ -13,6 +13,7 @@
     "threads",
     "subagents",
     "orchestration",
+    "worktree",
     "review",
     "terra",
     "luna",
@@ -21,8 +22,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Auto Router",
-    "shortDescription": "Route work across reviewed threads and subagents",
-    "longDescription": "Mention Auto Router and describe only the outcome. The active Sol or Terra parent chooses thread boundaries, Terra or Luna workers, permitted child usage, reviews every completed thread, and integrates only accepted results.",
+    "shortDescription": "Route work across isolated, reviewed threads",
+    "longDescription": "Mention Auto Router and describe only the outcome. The active Sol or Terra parent chooses thread boundaries, isolates potentially conflicting work with Git worktrees, routes Terra or Luna workers, reviews every completed thread, and integrates only accepted results.",
     "developerName": "tarou-imokenpi",
     "category": "Productivity",
     "capabilities": [
@@ -33,7 +34,7 @@
     "defaultPrompt": [
       "Analyze this repository thoroughly and prioritize evidence-backed issue candidates. Do not change files.",
       "Investigate and fix this bug, then run the relevant checks.",
-      "Use threads to process this large task set, review every completed thread, then consolidate only accepted results."
+      "Use isolated worktree threads for this large task set, review every completed thread, then integrate only accepted commits."
     ]
   },
   "license": "MIT"
