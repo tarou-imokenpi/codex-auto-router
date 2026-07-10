@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.0
+
+- Added mandatory self-contained `Delegation Brief v1` contracts for every spawned custom agent.
+- Required concrete objectives, source-of-truth references, known state, assumptions, dependencies, ownership, exclusions, permissions, worktree metadata, mandatory steps, deliverables, output schema, acceptance criteria, validation, evidence, stop conditions, fallback rules, and parent-review handoff.
+- Added a parent-side contract quality gate that blocks vague or contradictory delegation prompts before spawning.
+- Added child-side contract validation; custom agents now return `contract-invalid` instead of inventing missing scope, requirements, permissions, or acceptance criteria.
+- Added role-specific briefing requirements for scanners, explorers, reviewers, implementation workers, and verifiers.
+- Added dependency-aware wave execution and explicit parent wait rules.
+- Added a parent orchestrator prompting guide with strong/weak prompt patterns and concrete examples.
+- Updated parent review to verify every acceptance criterion against the required evidence.
+- Updated all six custom agents to require concrete bounded contracts before material work.
+
 ## 2.4.0
 
 - Added the model-pinned `spark_scanner` custom agent using `gpt-5.3-codex-spark`.
