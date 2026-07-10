@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.1
+
+- Added a mandatory parent review gate after every Terra or Luna thread completes.
+- Defined thread review decisions as `accepted`, `revision-required`, or `rejected`.
+- Required the parent to inspect decisive evidence and, for implementation threads, review diffs, ownership, behavior, and tests before integration.
+- Prevented unreviewed, partial, blocked, revision-required, or rejected thread results from being integrated as complete work.
+- Added parent-review handoff fields and a reusable review checklist to the thread contract templates.
+
 ## 2.2.0
 
 - Added automatic thread routing when the user explicitly requests threads or when a large task exceeds practical direct-subagent concurrency.
