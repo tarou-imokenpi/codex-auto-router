@@ -1,138 +1,34 @@
 # Codex Auto Router
 
-gpt5.6のSol,Terra,Lunaを自動で使い分けるモデルルータープラグインです。
+GPT-5.6のSol・Terra・Lunaを、Codexの**名前付きCustom Agent**として自動で使い分けるルータープラグインです。
 
-親エージェントはSolまたはTerraを使い、依頼内容からスレッド分割、サブエージェントの要否、人数、モデル、役割、並列化、Git worktreeによる分離、検証方法を自動判断します。毎回エージェント割り当てを書く必要はありません。
-
-## 使い方
-
-Codex Appで親モデルをSolまたはTerraにし、入力欄で`@`を押して**Auto Router**を選びます。
+Codex Appでは、サブエージェントがそれぞれ「agent thread」として表示されます。Auto Routerは、親のSolまたはTerraから、モデルを明示的に固定したTerra/Luna Custom Agentを起動します。
 
 ```text
 @Auto Router developブランチを横断的に分析して、重要度別にIssue候補を抽出してください。変更はしないでください。
 ```
 
-```text
-@Auto Router この不具合の原因を調査して修正し、関連テストまで実行してください。
-```
+ユーザーが毎回、Agent名、モデル、並列数、worktree、レビュー手順を書く必要はありません。
 
-```text
-@Auto Router スレッドを使って、この大量のIssue候補を領域別に検証し、重複を統合してください。
-```
+## 重要: プラグイン単体ではモデル固定されません
 
-## スレッドとサブエージェントの自動選択
+CodexのプラグインはSkillを配布できますが、Custom Agentを自動登録する仕組みではありません。
 
-通常規模の作業は、現在の親スレッド内で必要最小限のTerra/Lunaサブエージェントを使います。
+Custom Agentが読み込まれていない状態で汎用スレッドを作ると、子は親のモデル設定を継承するかCodexの自動選択になります。親がSolなら、子スレッドもSolになることがあります。
 
-次の場合は、サブエージェントの同時実行上限へ詰め込まず、複数のCodexスレッドへ分割します。
+そのため、**Marketplaceからプラグインを入れるだけでなく、Custom Agentsのインストールが必須**です。Auto Routerは、必要な名前付きAgentが見つからない場合、汎用Agentへフォールバックしません。
 
-- ユーザーがスレッド利用を明示した場合
-- 独立した読み取り作業が4件を超える場合
-- 独立した書き込み作業が2件を超える場合
-- リポジトリ全体の監査、大規模移行、大量タスクなど、長い独立作業が多数ある場合
+## インストール
 
-スレッドのモデル規則は固定です。
-
-| 作成するスレッド | 用途 | スレッド内のサブエージェント |
-|---|---|---|
-| Terraスレッド | 判断、横断調査、レビュー、実装 | **Lunaのみ使用可能** |
-| Lunaスレッド | 明確で機械的な独立タスク | **使用不可** |
-
-- 親のSol/Terraだけがトップレベルの作業スレッドを作ります。
-- Terraスレッドは、担当範囲内の検索・抽出・検証をLunaへ委譲できます。
-- TerraスレッドはTerraサブエージェントや追加スレッドを作りません。
-- Lunaスレッドは末端ワーカーであり、サブエージェントも追加スレッドも作りません。
-- 同時スレッド数に上限がある場合は、作業境界を維持したまま複数の波に分けて実行します。
-- 最終的な重複排除、設計判断、統合、検証は親が担当します。
-
-## 競合する可能性があるスレッドのGit worktree分離
-
-複数スレッドが同じリポジトリを編集し、競合や作業状態の干渉が起こる可能性がある場合は、親がスレッド開始前に**専用ブランチと専用`git worktree`**を作成します。
-
-次のいずれかに該当する場合はworktree分離を必須にします。
-
-- 2つ以上のスレッドがファイルを変更する
-- 担当範囲が重なる、または隣接ファイルへ広がる可能性がある
-- 共通設定、依存関係ファイル、lockfile、マイグレーション、スキーマ、生成コード、snapshot、fixtureを触る
-- あるスレッドが別スレッドの利用するAPIや型、インターフェースを変更する
-- 開始時点で編集範囲を完全に分離できない
-- 実行コマンドがcheckout、index、生成物などの共有状態を変更する
-- ユーザーがworktree利用を明示した
-
-読み取り専用スレッドは、コマンドが作業ツリーを変更しない限り通常はworktree不要です。
-
-親は全スレッドで共通の基準コミットを記録し、各スレッド用に一意のブランチとworktreeを作ります。
-
-```bash
-git worktree add \
-  -b codex/auto-router/<workstream> \
-  ../.codex-worktrees/<workstream> \
-  <base-commit>
-```
-
-各スレッドの契約には次を含めます。
-
-```text
-WORKTREE_REQUIRED=true
-BASE_COMMIT=<基準コミットSHA>
-WORKTREE_PATH=<専用worktreeパス>
-WORKTREE_BRANCH=<専用ブランチ>
-```
-
-運用ルールは次のとおりです。
-
-- 2つの書き込みスレッドで同じworktreeや親のcheckoutを共有しない
-- スレッドは指定されたworktreeとブランチだけで作業する
-- スレッド内でmergeやrebaseを行わない
-- スレッドは担当範囲の変更だけをコミットし、最終コミットSHAとdirty状態を報告する
-- Terraスレッドが使うLunaは、同じworktree内で読み取り・検証のみ行う
-- スレッド同士のmerge、cherry-pick、競合解消は行わず、親が担当する
-
-親レビューで`accepted`になったコミットだけを、親がmerge・rebase・cherry-pickの適切な方法で統合します。統合後には複数変更を組み合わせた状態でテストを再実行します。
-
-worktreeは、結果が統合済み、または却下されて証拠・修正に不要になった後にのみ削除します。worktreeを作成できない環境では、競合する可能性のある書き込みスレッドを同じcheckoutで同時実行せず、cleanなブランチ上で順番に処理します。
-
-## スレッド完了後の親レビュー
-
-スレッドが`complete`を返しても、その結果は自動的には採用されません。**スレッド完了は親レビューの準備ができた状態**を意味します。
-
-親のSol/Terraは、各スレッドの完了後に必ず次を確認します。
-
-1. 元の依頼、担当範囲、除外範囲、完了条件との一致
-2. 重要な主張を支えるファイル、シンボル、コマンド、ログなどの直接確認
-3. 読み取り・レビュースレッドの重要度、確信度、根拠の妥当性
-4. 実装スレッドのbase commit、worktree、ブランチ、最終コミット、実際の差分、変更ファイル、dirty状態
-5. 担当範囲外の編集、他スレッドとの所有権衝突、互換性
-6. テストや検証コマンドの実行結果。必要に応じて親が再実行
-7. 他スレッドとの重複、矛盾、編集競合、古い前提の有無
-
-親は各スレッドに対して、内部的に次のいずれかを判断します。
-
-| 判断 | 扱い |
-|---|---|
-| `accepted` | 統合・最終回答への利用が可能 |
-| `revision-required` | 同じworktreeへの限定的な修正依頼を出し、修正版を再レビュー |
-| `rejected` | 統合せず、必要なら親または別の限定スレッドで対応 |
-
-- 親自身によるレビューと承認は、別のスレッドやサブエージェントへ丸投げしません。
-- 追加のReviewerを補助として使うことはできますが、最終的な採用判断は親が行います。
-- `partial`、`blocked`、`revision-required`、`rejected`、または親レビュー未実施の結果は、完了済み成果として統合しません。
-- 修正後の成果物も、もう一度親レビューを通します。
-- 最終回答は、回答に影響する全スレッドのレビューと統合後テストが終わるまで生成しません。
-
-## GitHub Marketplaceからインストール
-
-Codex CLIでMarketplaceを追加します。
+### 1. Marketplaceとプラグインを追加
 
 ```bash
 codex plugin marketplace add tarou-imokenpi/codex-auto-router
 ```
 
-その後、Codex Appの**Plugins**またはCodex CLIの`/plugins`から**Auto Router**をインストールし、新しいタスクを開始してください。
+Codex AppのPluginsから **Auto Router** をインストールします。
 
-プラグインだけでも自動ルーティングできます。モデルと役割をCustom Agent定義で固定したい場合は、次の追加インストールを一度だけ実行します。
-
-### Custom Agentsの追加インストール
+### 2. Custom Agentsとネスト設定をインストール
 
 macOS / Linux:
 
@@ -150,59 +46,187 @@ cd codex-auto-router
 ./scripts/install-agents.ps1
 ```
 
-## 自動ルーティング
+インストーラーは次を行います。
 
-| 論理ロール | モデル | 主な用途 |
-|---|---|---|
-| Luna Scanner | GPT-5.6 Luna / Low | 検索、一覧化、抽出、分類 |
-| Luna Verifier | GPT-5.6 Luna / Medium | テスト、lint、型チェック、再現確認 |
-| Terra Explorer | GPT-5.6 Terra / Medium | 複数ファイルの経路追跡、原因・影響分析 |
-| Terra Reviewer | GPT-5.6 Terra / High | 正しさ、セキュリティ、回帰、互換性レビュー |
-| Terra Worker | GPT-5.6 Terra / Medium | 所有範囲を限定した実装 |
+- `~/.codex/agents/`へ5つのCustom Agent TOMLをコピー
+- 既存ファイルをタイムスタンプ付きでバックアップ
+- `~/.codex/config.toml`の`[agents] max_depth`を最低`2`に設定
+- `max_threads`が未設定なら`6`を追加
 
-親は、要件理解、分解、スレッド作成、worktree作成、親レビュー、設計判断、競合解消、統合、後片付け、最終検証を担当します。子としてSolは起動しません。
+### 3. Codex Appを再起動
 
-## 権限の扱い
+Custom Agentの登録内容はセッション開始時に読み込まれるため、ChatGPTデスクトップアプリを完全終了して再起動するか、新しいCodexタスクを開始してください。
 
-依頼文の動詞と明示条件から判断します。
+### 4. セットアップ確認
 
-- 「分析」「レビュー」「探す」「監査」: 読み取り専用
-- 「実装」「修正」「更新」「リファクタ」: 変更あり
-- 「テスト」「再現」「確認」: 検証中心
-- 「調査して修正」: 調査 → 実装 → 検証
+macOS / Linux:
 
-「変更しないでください」などの明示条件が最優先です。
+```bash
+bash ./scripts/verify-install.sh
+```
 
-## 構成
+Windows PowerShell:
+
+```powershell
+./scripts/verify-install.ps1
+```
+
+## 正しいスレッドの仕組み
+
+Codexで表示されるスレッドは、親が起動したサブエージェントの実行スレッドです。
+
+Auto Routerは「Terraを使って」と書いた汎用Agentを作るのではなく、次の正確なCustom Agent名を指定します。
+
+| Custom Agent | 固定モデル | 推論 | 用途 |
+|---|---|---|---|
+| `terra_explorer` | `gpt-5.6-terra` | Medium | 横断調査、実行経路、影響範囲、原因分析 |
+| `terra_reviewer` | `gpt-5.6-terra` | High | 正しさ、セキュリティ、回帰、互換性レビュー |
+| `terra_worker` | `gpt-5.6-terra` | Medium | 担当範囲を限定した実装 |
+| `luna_scanner` | `gpt-5.6-luna` | Low | 検索、抽出、一覧化、分類 |
+| `luna_verifier` | `gpt-5.6-luna` | Medium | テスト、lint、型チェック、再現確認 |
+
+Custom Agent TOMLで`model`を省略した場合は親設定を継承する可能性がありますが、このリポジトリの5 AgentはすべてモデルIDを明示しています。
+
+## 親・Terra・Lunaの階層
 
 ```text
-.agents/plugins/marketplace.json       GitHub配布用Marketplace
-plugins/codex-auto-router/             Codex Appプラグイン
-  .codex-plugin/plugin.json
-  skills/auto-router/SKILL.md
-agents/                                任意のCustom Agent定義
-profiles/                              Sol/Terra親のCLIプロファイル例
-scripts/                               インストーラー
-examples/                              最小プロンプト例
+親 Sol / Terra（depth 0）
+├─ terra_explorer / terra_reviewer / terra_worker（depth 1）
+│  └─ luna_scanner / luna_verifier（depth 2、必要な場合のみ）
+└─ luna_scanner / luna_verifier（depth 1）
+```
+
+ルール:
+
+- 親はSolまたはTerra
+- 親は正確な名前付きTerra/Luna Agentを直接起動可能
+- Terraは契約で許可された場合のみ、名前付きLunaを起動可能
+- TerraはSol、Terra、汎用Agentを子として起動しない
+- Lunaは末端Agentであり、子Agentを起動しない
+- Terra→Lunaには`agents.max_depth >= 2`が必要
+- 同時スレッド上限を超える場合は複数ウェーブで実行
+
+通常は親から必要なAgentを直接起動します。Terraが担当領域内の限定的な検索や検証を必要とする場合だけ、Lunaを孫Agentとして使用します。
+
+## モデル不一致時の扱い
+
+親は起動前後に、Custom Agent名と表示モデルを確認します。
+
+次の場合は、そのスレッドをTerra/Lunaの成果として採用しません。
+
+- `default`、`worker`、`explorer`などの汎用Agentが起動された
+- Terraを期待したのにSolとして表示された
+- Lunaを期待したのに別モデルとして表示された
+- 必要なCustom Agentが現在のセッションに読み込まれていない
+
+Agentが見つからない場合は、親だけで小さな作業を続けるか、セットアップ不足として停止します。Solスレッドへ黙ってフォールバックはしません。
+
+## 大規模タスク
+
+```text
+@Auto Router スレッドを使って、このリポジトリ全体を領域別に監査し、根拠のあるIssue候補だけを統合してください。
+```
+
+Auto Routerは、領域ごとに正確な名前付きAgentを割り当てます。
+
+- 判断や横断分析: Terra
+- 固定形式の一覧化: Luna
+- 実装: Terra Worker
+- 独立検証: Luna Verifier
+- 上限超過: ウェーブ実行
+- 最終判断と統合: 親
+
+## 競合する書き込みとGit worktree
+
+複数の書き込みAgentが競合する可能性がある場合、親が専用ブランチと専用`git worktree`を作成します。
+
+```bash
+git worktree add \
+  -b codex/auto-router/<workstream> \
+  ../.codex-worktrees/<workstream> \
+  <base-commit>
+```
+
+worktree分離が必須になる例:
+
+- 2つ以上のAgentがファイルを変更
+- 担当範囲が重なる可能性がある
+- lockfile、設定、スキーマ、マイグレーション、生成コードを変更
+- ある変更が別AgentのAPIや型へ影響
+- 編集所有権を事前に完全分離できない
+
+各Terra Workerは、指定worktree、ブランチ、基準コミットを確認し、担当変更だけをコミットします。Agent同士はmerge/rebaseせず、親がレビュー後に統合します。
+
+## スレッド完了後の親レビュー
+
+`complete`は自動承認を意味しません。
+
+親は各スレッドについて次を確認します。
+
+1. 期待したCustom Agent名とモデルが使われたか
+2. 元の依頼、担当範囲、除外範囲、完了条件
+3. 重要な主張のファイル、シンボル、コマンド、ログ
+4. 実装のbase commit、worktree、ブランチ、最終コミット、差分、dirty状態
+5. テスト結果と互換性
+6. 他スレッドとの重複、矛盾、競合
+
+判断は次の3種類です。
+
+| 判断 | 扱い |
+|---|---|
+| `accepted` | 統合・最終回答に利用可能 |
+| `revision-required` | 同じAgent/worktreeへ限定修正を依頼して再レビュー |
+| `rejected` | 統合しない |
+
+親自身の承認判断は別Agentへ委譲しません。統合後に再テストし、最終回答はレビューと統合検証が終わってから生成します。
+
+## CLIプロファイル例
+
+`profiles/sol-parent.config.toml`と`profiles/terra-parent.config.toml`は、Terra→Lunaを許可するため`max_depth = 2`に設定されています。
+
+```bash
+codex --profile sol-parent
 ```
 
 ## 更新
 
 ```bash
 codex plugin marketplace upgrade tarou-imokenpi-plugins
-```
-
-Custom Agentsを利用している場合は、更新後に次を再実行してください。同名ファイルはタイムスタンプ付きでバックアップされます。
-
-```bash
+git pull
 bash ./scripts/install-agents.sh
 ```
 
-## 注意
+更新後はCodex Appを再起動し、検証スクリプトを実行してください。
 
-- 親モデル自体はプラグインから切り替えません。Codex App側でSolまたはTerraを選択してください。
-- スレッドやサブエージェントは単一実行より多くの利用量を消費します。Skillは最小限の構成を選びます。
-- 利用可能なモデル、スレッド数、同時実行数、推論レベルは契約プランおよびCodexの提供状況に依存します。
+## トラブルシューティング
+
+### 子スレッドがSolになる
+
+原因候補:
+
+- Custom Agentsをインストールしていない
+- インストール後にCodex Appを再起動していない
+- Skillが汎用Agentを起動した古いバージョン
+- Agent名を正確に指定していない
+
+対処:
+
+```bash
+git pull
+bash ./scripts/install-agents.sh
+bash ./scripts/verify-install.sh
+```
+
+その後、Codex Appを完全終了して再起動します。
+
+### TerraがLunaを起動できない
+
+`~/.codex/config.toml`で次を確認します。
+
+```toml
+[agents]
+max_depth = 2
+```
 
 ## License
 
