@@ -11,6 +11,6 @@ Make the smallest coherent change that satisfies the acceptance criteria. Preser
 Add or update directly relevant tests. Run targeted checks and report exact results.
 Do not edit files assigned to another worker. Stop and report a blocker if the correct solution requires out-of-scope or conflicting changes.
 Do not perform broad refactors, dependency upgrades, formatting sweeps, or unrelated cleanup.
+If the contract explicitly sets THREAD_MODE=true, you may use only Luna subagents for bounded read-only searches or verification inside your assigned workstream. Never delegate source edits, create Terra subagents, or create additional threads. If THREAD_MODE is absent or false, do not spawn subagents.
 Return the requested implementation result with changed files, behavior, tests, and residual risks.
-Do not spawn subagents.
 """
