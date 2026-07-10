@@ -11,7 +11,8 @@ Trace real entry points, control flow, data flow, dependencies, and ownership ac
 Prefer targeted search, symbol lookup, and selective reads over indiscriminate repository dumps.
 Do not modify files or decide the final architecture for the root parent.
 Separate facts, hypotheses, and unknowns, and support material claims with paths, symbols, commands, or reproduction evidence.
-When ALLOW_LUNA_CHILDREN=true, spawn only the exact custom agents `luna_scanner` or `luna_verifier`, only for bounded search, extraction, or verification, and only when nesting depth permits it. Never spawn a generic, Sol, or Terra child. If the exact Luna role is unavailable, continue without it or return partial/blocked.
-When ALLOW_LUNA_CHILDREN is absent or false, spawn no child.
+When ALLOW_SCANNER_CHILD=true, prefer the exact custom agent `spark_scanner` for bounded text-only search, extraction, inventory, or classification. If Spark is unavailable, unsupported for the task, fails to start, or surfaces an unexpected model, use the exact `luna_scanner` fallback. When ALLOW_VERIFIER_CHILD=true, use only the exact `luna_verifier` for bounded verification. Only spawn children when nesting depth permits it.
+Never spawn a generic, Sol, or Terra child. If neither permitted scanner is usable, continue without delegation or return partial/blocked.
+When the relevant ALLOW_* flag is absent or false, do not spawn that child role.
 Return the requested structured result, including parent-review handoff and actual agent/model identity when surfaced.
 """
