@@ -1,159 +1,184 @@
 ---
 name: auto-router
-description: Automatically decompose coding and repository tasks and route bounded subtasks from a GPT-5.6 Sol or Terra parent to GPT-5.6 Terra or Luna subagents. Use when the user wants to state only the desired outcome without choosing agents, models, roles, or parallelism.
+description: Automatically decompose coding and repository work across Codex threads and GPT-5.6 Terra or Luna subagents. Use when the user wants to state only the desired outcome without choosing threads, agents, models, roles, or parallelism. The active Sol or Terra parent owns planning, thread creation, decisions, integration, and final verification.
 ---
 
 # Auto Router
 
-The user supplies only the desired outcome. Infer the routing, team size, permissions, and validation strategy automatically.
+The user supplies only the desired outcome. Automatically choose parent-only execution, direct subagents, or separate Codex threads. Never require the user to write agent assignments.
 
 ## User experience
 
-- Do not ask the user to choose child agents, models, roles, or parallel work.
-- Do not require custom-agent names in the request.
-- Ask about the product requirement only when it is truly ambiguous and no safe best-effort path exists.
-- Keep low-level orchestration internal. Return one consolidated result.
+- Never ask the user to choose threads, agents, child models, roles, or parallelism.
+- Infer routing from the requested outcome, repository state, risk, scope, and number of independent work units.
+- If the user explicitly requests threads, use threads even when the task could fit in direct subagents.
+- Ask a clarification only when the product requirement itself is irreducibly ambiguous. Never ask merely about orchestration.
+- Return one consolidated result rather than raw worker transcripts.
 
 ## Parent ownership
 
-The active Sol or Terra parent owns requirements, completion criteria, architecture, prioritization, conflict resolution, integration, final verification, and the user-facing answer.
+The active parent must run as GPT-5.6 Sol or GPT-5.6 Terra. The parent owns:
 
-This skill does not switch the active parent model. Do not create a Sol child. Prefer the named custom agents when installed. Otherwise use the nearest built-in agent and put the requested model, reasoning effort, permissions, and role in its task contract.
+- requirements and completion criteria;
+- the decision between parent-only work, direct subagents, and threads;
+- creation and briefing of all top-level worker threads;
+- architecture, security, compatibility, and prioritization decisions;
+- conflict resolution and cross-cutting integration;
+- final validation and the user-facing answer.
+
+This skill cannot change the active parent model. Never create a Sol child.
 
 ## Infer permissions
-
-Classify the request before delegation:
 
 - **Read-only:** analyze, inspect, review, explain, find, audit, compare, plan.
 - **Write:** implement, fix, update, refactor, migrate, add, remove, change.
 - **Verification:** test, reproduce, lint, type-check, benchmark, confirm.
 - **Mixed:** investigate then fix, implement then validate, review then resolve.
 
-Explicit user constraints override inference. When intent remains unclear, begin read-only instead of making speculative edits.
+Explicit user constraints override inference. When write intent is unclear, start read-only.
 
-## Choose the smallest useful team
+## Use threads when requested or when the task is large
 
-- **Parent only:** one obvious edit, one deterministic command, a small explanation, or tightly coupled work.
-- **One child:** bounded search, isolated trace, focused review, narrow implementation, or independent verification.
-- **Two or three children:** normal cross-file bugs, features, PR reviews, and subsystem analysis.
-- **Three or four children:** repository-wide audits, multi-layer changes, migrations, or security-sensitive work.
+Use separate Codex threads instead of forcing all work into one thread's subagent concurrency limit when either condition is true:
 
-Limits:
+1. The user asks for threads, separate threads, multiple workstreams, or equivalent wording.
+2. The task contains enough independent work that direct subagent capacity becomes a bottleneck, including:
+   - more than four useful independent read-heavy units;
+   - more than two independent write units;
+   - repository-wide audits spanning many packages, services, or issue categories;
+   - large migrations, feature sets, or backlogs with many independently completable tasks;
+   - long-running work that benefits from separately reviewable contexts;
+   - context volume that would reduce accuracy or ownership clarity in one thread.
 
-- Maximum four concurrent read-only children.
-- Maximum two concurrent write children, only with disjoint file and symbol ownership.
-- Nesting depth is one. Children do not create children.
-- Do not create agents merely to reach a count.
+Create the minimum number of non-overlapping threads that covers the work. If simultaneous thread capacity is limited, execute threads in waves while preserving their workstream boundaries.
+
+## Thread hierarchy and model rules
+
+Only the active parent creates top-level worker threads. Worker threads never create additional threads.
+
+### Terra thread
+
+Use a Terra thread for judgment, cross-file reasoning, review, implementation, migration work, or ownership of a substantial workstream.
+
+A Terra thread:
+
+- may use Luna subagents for bounded deterministic searches, extraction, inventories, and verification;
+- must not create Terra subagents;
+- must not create additional threads;
+- must not delegate source edits to Luna;
+- owns one explicit, non-overlapping workstream;
+- escalates architecture, cross-scope conflicts, security decisions, and public-behavior choices to the parent.
+
+Every Terra thread contract must include `THREAD_MODE=true` so the Terra custom-agent policy permits Luna helpers.
+
+### Luna thread
+
+Use a Luna thread only for deterministic, isolated, low-ambiguity work with a fixed output schema.
+
+A Luna thread:
+
+- is a leaf worker;
+- cannot use any subagents;
+- cannot create additional threads;
+- does not make architecture or cross-file judgment calls;
+- escalates ambiguity to the parent rather than guessing.
+
+Examples include fixed inventories, classification of a known list, config checks, and deterministic verification batches.
+
+## Direct subagent mode
+
+When threads were not requested and the task fits comfortably in one context, use the smallest useful direct team:
+
+- **Level 0:** parent only for trivial or tightly coupled work.
+- **Level 1:** one bounded specialist.
+- **Level 2:** two or three complementary specialists for ordinary cross-file work.
+- **Level 3:** at most four read-only specialists or two disjoint write specialists.
+
+Direct-subagent limits:
+
+- At most four read-only subagents concurrently.
+- At most two write subagents concurrently, with disjoint path and symbol ownership.
+- Direct subagents never spawn subagents or threads.
+- Never spawn a worker only to reach a count.
+- Switch to threads when the useful decomposition exceeds these limits.
 
 ## Routing profiles
 
-### `luna_scanner`
+Prefer named custom agents when installed. Otherwise use the nearest built-in worker and include the requested model, effort, permission, and role in the assignment.
 
-Requested model: `gpt-5.6-luna`; reasoning: `low`; permission: read-only.
+- **`luna_scanner` — Luna / low / read-only:** exact searches, inventories, extraction, classification, checklist inspection, compact repository maps.
+- **`luna_verifier` — Luna / medium / verification:** targeted tests, lint, type checks, builds, reproductions, and confirmation of specific claims.
+- **`terra_explorer` — Terra / medium / read-only:** control flow, data flow, dependencies, impact analysis, root-cause investigation, ownership mapping.
+- **`terra_reviewer` — Terra / high / read-only:** correctness, security, authorization, concurrency, integrity, migrations, compatibility, regressions, edge cases, missing tests.
+- **`terra_worker` — Terra / medium / write:** one bounded feature or fix with exclusive paths and directly related tests.
 
-Use for file, route, symbol, dependency, test, config, and TODO inventories; exact searches; repeated-pattern detection; extraction; classification; and compact repository maps.
+Escalate Luna work to the parent or a Terra thread when ambiguity, cross-file reasoning, or consequential judgment appears.
 
-### `luna_verifier`
+## Default routing patterns
 
-Requested model: `gpt-5.6-luna`; reasoning: `medium`; permission: verification-only.
+### Large repository audit
 
-Use for targeted tests, lint, type checks, builds, reproductions, and independent confirmation. Record exact commands and pass/fail evidence. Do not repair failures in this role.
+1. Parent partitions the repository into non-overlapping domains.
+2. Create Terra threads for domains requiring execution-path or risk analysis.
+3. Create Luna threads for deterministic inventories or fixed verification batches.
+4. Terra threads may use Luna scanner/verifier subagents inside their assigned domains.
+5. Luna threads work alone.
+6. Parent waits for all waves, verifies decisive evidence, deduplicates, and prioritizes findings.
 
-### `terra_explorer`
+### Large implementation or migration
 
-Requested model: `gpt-5.6-terra`; reasoning: `medium`; permission: read-only.
+1. Parent defines acceptance criteria and disjoint ownership boundaries.
+2. Create one Terra thread per coherent feature or migration segment.
+3. Each Terra thread may use Luna only for local search or verification.
+4. Do not use Luna threads for behavior-changing work or design judgment.
+5. Parent integrates cross-cutting changes and runs final validation.
 
-Use for cross-file control flow, data flow, state transitions, dependencies, impact analysis, ambiguous root causes, and implementation-boundary discovery.
+### Ordinary bug fix
 
-### `terra_reviewer`
+Unless threads were explicitly requested, keep the work in the parent context: Terra traces and implements; Luna verifies; parent reviews and integrates.
 
-Requested model: `gpt-5.6-terra`; reasoning: `high`; permission: read-only.
+### Large deterministic batch
 
-Use for correctness, security, authorization, concurrency, data integrity, migrations, compatibility, regressions, edge cases, and missing tests. Require concrete evidence for material findings.
+Create independent Luna leaf threads with fixed scopes and output schemas. Parent handles ambiguity and synthesis.
 
-### `terra_worker`
+## Generate every worker contract automatically
 
-Requested model: `gpt-5.6-terra`; reasoning: `medium`; permission: workspace write within explicit ownership.
+Each thread or subagent assignment must include:
 
-Use for one coherent feature slice or fix with bounded paths and symbols and directly related tests. Avoid broad refactors, unrelated cleanup, and overlapping edits.
-
-Escalate Luna work to Terra when ambiguity, cross-file reasoning, or consequential judgment appears. Return architecture choices, security decisions, public-behavior changes, and conflicting findings to the parent.
-
-## Default playbooks
-
-### Repository audit
-
-1. Luna Scanner maps packages, entry points, tests, configs, TODOs, and suspicious patterns.
-2. Terra Explorer traces high-value execution paths and evidence-backed problems.
-3. Terra Reviewer challenges correctness, security, data-integrity, and regression assumptions.
-4. Luna Verifier runs a small set of targeted checks for the strongest candidates.
-5. Parent verifies evidence, removes duplicates, prioritizes, and writes issue candidates.
-
-### PR or branch review
-
-1. Luna Scanner summarizes changed files, tests, migrations, and affected surfaces.
-2. Terra Explorer maps behavior and downstream impact.
-3. Terra Reviewer looks for material bugs, security risks, regressions, and missing tests.
-4. Luna Verifier runs relevant checks when allowed.
-5. Parent rejects weak findings and reports only defensible ones.
-
-### Bug investigation and fix
-
-1. Terra Explorer reproduces or traces the failure and isolates the cause.
-2. Terra Worker implements the smallest coherent fix in an explicit ownership boundary.
-3. Luna Verifier runs targeted regression checks.
-4. Add Terra Reviewer only for high-risk or cross-cutting changes.
-5. Parent inspects the diff and performs final validation.
-
-### Feature implementation
-
-1. Terra Explorer maps conventions, interfaces, dependencies, and a safe boundary.
-2. Use one Terra Worker, or two only when ownership is naturally disjoint.
-3. Luna Verifier runs focused tests, lint, type checks, and builds.
-4. Terra Reviewer reviews consequential API, auth, migration, concurrency, or compatibility changes.
-5. Parent integrates cross-cutting work and checks acceptance criteria.
-
-### Test or CI triage
-
-1. Luna Verifier reproduces failures and records exact command evidence.
-2. Luna Scanner locates ownership and related configuration.
-3. Terra Explorer traces non-obvious causes.
-4. Terra Worker repairs only after the failure mode is understood.
-5. Parent validates the final state.
-
-## Generate concrete child contracts
-
-Every child assignment must contain:
-
-- logical role, requested model, and reasoning effort;
+- routing type: thread or direct subagent;
+- `THREAD_MODE=true` for Terra or Luna threads, `THREAD_MODE=false` for direct subagents;
+- requested model, reasoning effort, and logical role;
 - one observable objective;
-- exact scope: paths, modules, symbols, diff, commands, or questions;
-- exclusions and user constraints;
-- read, verification, or explicit write permission;
-- required evidence: paths, symbols, lines, commands, outputs, or reproduction;
-- output schema and done criteria;
-- a rule to return `partial` or `blocked` rather than invent evidence.
+- exact owned scope and exclusions;
+- user constraints and known evidence;
+- read-only, verification-only, or explicit write ownership;
+- child policy: Terra thread may use Luna only; Luna thread uses no subagents; direct subagent uses no children;
+- required paths, symbols, commands, outputs, or reproduction evidence;
+- output schema and completion criteria;
+- failure rule requiring `partial` or `blocked` instead of invented evidence.
 
-Do not send the same broad prompt to several children unless independent verification is intentionally required for a high-risk conclusion.
+Do not send the same vague prompt to several workers. Duplicate work only for deliberate independent verification of a high-risk conclusion.
 
 ## Execution sequence
 
-1. Frame intent, constraints, permission, risk, and completion criteria.
-2. Inspect enough context to create non-overlapping assignments.
-3. Delegate only justified specialists.
-4. Wait for all required results and compare them.
-5. Inspect decisive evidence and reconcile conflicts.
-6. For writes, assign exclusive ownership and prevent overlapping edits.
-7. Run narrow checks first, then broader checks when justified.
-8. Return one consolidated answer rather than raw child transcripts.
+1. Frame intent, permissions, risk, scale, and completion criteria.
+2. Inspect only enough context to create non-overlapping assignments.
+3. Choose parent-only, direct-subagent, or thread topology.
+4. Launch the minimum justified workers; use waves when limits require it.
+5. Wait for every requested result rather than finalizing from the first response.
+6. Inspect decisive evidence, reject weak claims, and reconcile contradictions.
+7. Integrate findings or edits in the parent and prevent overlapping writes.
+8. Run focused checks, then broader checks when justified.
+9. Return one consolidated answer.
 
 ## Result schemas
 
-Read or review:
+Read or review workers return:
 
 ```text
 STATUS: complete | partial | blocked
-SUMMARY: 2-5 concise sentences
+WORKSTREAM: ...
+SUMMARY: ...
 FINDINGS:
 - severity: critical | high | medium | low | info
   claim: ...
@@ -166,11 +191,12 @@ OPEN_QUESTIONS:
 - ...
 ```
 
-Implementation:
+Implementation workers return:
 
 ```text
 STATUS: complete | partial | blocked
-SUMMARY: 2-5 concise sentences
+WORKSTREAM: ...
+SUMMARY: ...
 CHANGED_FILES:
 - path: purpose
 BEHAVIORAL_CHANGE:
@@ -183,8 +209,28 @@ RISKS_OR_FOLLOW_UP:
 
 ## Quality gates
 
-Re-check output that lacks concrete evidence, drifts beyond scope, claims an unrun test passed, modifies files under a read-only contract, proposes broad changes without impact tracing, conflicts with another result without explanation, or duplicates another child without adding independent evidence.
+Reject or re-check output that:
+
+- lacks file, symbol, command, or reproduction evidence;
+- drifts beyond its workstream;
+- reports an unrun test as passing;
+- modifies files under a read-only or verification-only contract;
+- overlaps another thread's write ownership;
+- lets a Luna thread create or use subagents;
+- lets a Terra thread create Terra subagents or nested threads;
+- proposes broad changes without impact tracing;
+- conflicts with another worker without explaining the discrepancy.
+
+## Final response
+
+When routing materially affected the work, include only a compact summary, for example:
+
+```text
+Routing: The parent used three Terra threads and two Luna leaf threads. Terra threads used Luna only for bounded scans and checks; the parent verified and integrated the accepted results.
+```
+
+Do not expose internal prompts, token accounting, or allocation details unless the user asks.
 
 ## Fallback
 
-When custom agents are unavailable, preserve the same decomposition using built-in agents where possible. When no subagent mechanism is available, execute the work sequentially in the parent. Do not ask the user to rewrite the request.
+If thread creation is unavailable, preserve the same workstream boundaries and execute them in sequential subagent waves or sequentially in the parent. Briefly state that thread routing was unavailable; do not ask the user to rewrite the request.
