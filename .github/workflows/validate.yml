@@ -23,7 +23,7 @@ jobs:
               tomllib.loads(path.read_text(encoding='utf-8'))
               print('toml ok:', path)
           PY
-      - name: Validate model routing invariants
+      - name: Validate model routing and delegation invariants
         run: |
           python - <<'PY'
           import pathlib, tomllib
@@ -37,19 +37,55 @@ jobs:
               'luna-verifier.toml': ('luna_verifier', 'gpt-5.6-luna'),
           }
 
+          required_agent_contract_terms = [
+              'contract_version',
+              'workstream_id',
+              'objective',
+              'owned_scope',
+              'out_of_scope',
+              'acceptance_criteria',
+              'required_evidence',
+              'contract-invalid',
+              'parent_review_handoff',
+          ]
+
           for filename, (name, model) in expected.items():
               path = pathlib.Path('agents') / filename
               data = tomllib.loads(path.read_text(encoding='utf-8'))
               assert data['name'] == name, (path, data.get('name'), name)
               assert data['model'] == model, (path, data.get('model'), model)
-              print('agent routing ok:', name, '->', model)
+              instructions = data['developer_instructions'].lower()
+              for term in required_agent_contract_terms:
+                  assert term in instructions, (path, 'missing contract term', term)
+              print('agent routing and contract ok:', name, '->', model)
 
-          skill = pathlib.Path('plugins/codex-auto-router/skills/auto-router/SKILL.md').read_text(encoding='utf-8')
+          skill_path = pathlib.Path('plugins/codex-auto-router/skills/auto-router/SKILL.md')
+          skill = skill_path.read_text(encoding='utf-8')
           skill_lower = skill.lower()
-          assert 'prefer the exact `spark_scanner`' in skill_lower
-          assert 'use the exact `luna_scanner`' in skill_lower
-          assert 'do not fall back from spark to a generic agent' in skill_lower
-          print('scanner fallback policy ok')
+          required_skill_terms = [
+              'delegation brief v1',
+              'contract quality gate',
+              'source_of_truth',
+              'dependencies',
+              'deliverables',
+              'acceptance_criteria',
+              'validation',
+              'required_evidence',
+              'stop_conditions',
+              'parent wait rule',
+              'prefer the exact `spark_scanner`',
+              'exact `luna_scanner`',
+          ]
+          for term in required_skill_terms:
+              assert term in skill_lower, ('SKILL.md missing', term)
+
+          references = pathlib.Path('plugins/codex-auto-router/skills/auto-router/references')
+          assert (references / 'delegation-contracts.md').is_file()
+          assert (references / 'orchestrator-prompting.md').is_file()
+          contracts = (references / 'delegation-contracts.md').read_text(encoding='utf-8').lower()
+          for term in ['delegation brief v1', 'contract quality gate', 'child contract-invalid response']:
+              assert term in contracts, ('delegation-contracts.md missing', term)
+          print('orchestrator contract policy ok')
 
           for path in pathlib.Path('profiles').glob('*.toml'):
               data = tomllib.loads(path.read_text(encoding='utf-8'))
