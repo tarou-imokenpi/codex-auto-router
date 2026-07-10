@@ -24,6 +24,7 @@ check_agent() {
 check_agent terra-explorer.toml gpt-5.6-terra
 check_agent terra-reviewer.toml gpt-5.6-terra
 check_agent terra-worker.toml gpt-5.6-terra
+check_agent spark-scanner.toml gpt-5.3-codex-spark
 check_agent luna-scanner.toml gpt-5.6-luna
 check_agent luna-verifier.toml gpt-5.6-luna
 
@@ -53,4 +54,5 @@ if [[ "$FAIL" -ne 0 ]]; then
 fi
 
 echo ""
-echo "Installation files are correct. Restart Codex or start a new task before testing @Auto Router."
+echo "Installation files are correct. Spark account/session availability is checked at runtime; Luna Scanner is the fallback."
+echo "Restart Codex or start a new task before testing @Auto Router."
