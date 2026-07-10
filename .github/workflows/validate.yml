@@ -23,5 +23,30 @@ jobs:
               tomllib.loads(path.read_text(encoding='utf-8'))
               print('toml ok:', path)
           PY
+      - name: Validate model routing invariants
+        run: |
+          python - <<'PY'
+          import pathlib, tomllib
+
+          expected = {
+              'terra-explorer.toml': ('terra_explorer', 'gpt-5.6-terra'),
+              'terra-reviewer.toml': ('terra_reviewer', 'gpt-5.6-terra'),
+              'terra-worker.toml': ('terra_worker', 'gpt-5.6-terra'),
+              'luna-scanner.toml': ('luna_scanner', 'gpt-5.6-luna'),
+              'luna-verifier.toml': ('luna_verifier', 'gpt-5.6-luna'),
+          }
+
+          for filename, (name, model) in expected.items():
+              path = pathlib.Path('agents') / filename
+              data = tomllib.loads(path.read_text(encoding='utf-8'))
+              assert data['name'] == name, (path, data.get('name'), name)
+              assert data['model'] == model, (path, data.get('model'), model)
+              print('agent routing ok:', name, '->', model)
+
+          for path in pathlib.Path('profiles').glob('*.toml'):
+              data = tomllib.loads(path.read_text(encoding='utf-8'))
+              assert data['agents']['max_depth'] >= 2, (path, data['agents']['max_depth'])
+              print('nesting depth ok:', path, data['agents']['max_depth'])
+          PY
       - name: Check shell syntax
         run: bash -n scripts/*.sh
