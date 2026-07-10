@@ -45,9 +45,10 @@ jobs:
               print('agent routing ok:', name, '->', model)
 
           skill = pathlib.Path('plugins/codex-auto-router/skills/auto-router/SKILL.md').read_text(encoding='utf-8')
-          assert 'Prefer the exact `spark_scanner`' in skill
-          assert 'use the exact `luna_scanner`' in skill
-          assert 'do not fall back from Spark to a generic agent' in skill.lower()
+          skill_lower = skill.lower()
+          assert 'prefer the exact `spark_scanner`' in skill_lower
+          assert 'use the exact `luna_scanner`' in skill_lower
+          assert 'do not fall back from spark to a generic agent' in skill_lower
           print('scanner fallback policy ok')
 
           for path in pathlib.Path('profiles').glob('*.toml'):
