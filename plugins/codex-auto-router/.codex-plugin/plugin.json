@@ -1,7 +1,7 @@
 {
   "name": "codex-auto-router",
-  "version": "2.2.2",
-  "description": "Automatically decomposes Codex tasks across threads, isolates potentially conflicting work with Git worktrees, and routes bounded work from a Sol or Terra parent to Terra or Luna workers with mandatory parent review before integration.",
+  "version": "2.3.0",
+  "description": "Routes Codex work to explicitly named, model-pinned GPT-5.6 Terra and Luna custom agents, with nested Luna support, Git worktree isolation, and mandatory parent review.",
   "author": {
     "name": "tarou-imokenpi",
     "url": "https://github.com/tarou-imokenpi"
@@ -10,31 +10,28 @@
   "repository": "https://github.com/tarou-imokenpi/codex-auto-router",
   "keywords": [
     "codex",
-    "threads",
+    "custom-agents",
     "subagents",
+    "threads",
     "orchestration",
     "worktree",
     "review",
     "terra",
-    "luna",
-    "repository"
+    "luna"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Auto Router",
-    "shortDescription": "Route work across isolated, reviewed threads",
-    "longDescription": "Mention Auto Router and describe only the outcome. The active Sol or Terra parent chooses thread boundaries, isolates potentially conflicting work with Git worktrees, routes Terra or Luna workers, reviews every completed thread, and integrates only accepted results.",
+    "shortDescription": "Route work to model-pinned Terra and Luna agents",
+    "longDescription": "Mention Auto Router and describe only the outcome. The Sol or Terra parent spawns exact named custom agents so child threads do not silently inherit Sol, optionally allows Terra to use named Luna helpers at depth 2, isolates conflicting writes with Git worktrees, and reviews every result before integration.",
     "developerName": "tarou-imokenpi",
     "category": "Productivity",
-    "capabilities": [
-      "Read",
-      "Write"
-    ],
+    "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/tarou-imokenpi/codex-auto-router",
     "defaultPrompt": [
-      "Analyze this repository thoroughly and prioritize evidence-backed issue candidates. Do not change files.",
-      "Investigate and fix this bug, then run the relevant checks.",
-      "Use isolated worktree threads for this large task set, review every completed thread, then integrate only accepted commits."
+      "Analyze this repository with model-pinned Terra and Luna custom agents and report evidence-backed issues.",
+      "Implement this issue with named Terra workers, isolated worktrees where needed, and parent review.",
+      "Process this large task set in named custom-agent threads and never fall back to inherited Sol agents."
     ]
   },
   "license": "MIT"
