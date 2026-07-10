@@ -1,88 +1,89 @@
-# Delegation contract templates
+# Thread and subagent contract templates
 
-Replace each bracketed value before dispatching a child.
+Replace every bracketed value. The parent creates all top-level threads.
 
-## Luna scanner
+## Terra thread
 
 ```text
-Role: luna_scanner
-Requested model: gpt-5.6-luna
-Reasoning: low
-Objective: [exact inventory, extraction, or classification result]
-Scope: [paths, modules, or diff]
-Exclusions: [areas to ignore]
-Context: [known facts and constraints]
-Permission: Read-only. Do not modify files.
-Required evidence: Cite each result with file path and symbol or line when available.
-Output: Use the read/review result schema and keep findings factual.
-Done criteria: [observable list, count, table, or checklist]
-Failure rule: Return partial or blocked and state what could not be verified.
+THREAD_MODE=true
+Worker type: Terra thread
+Requested model: gpt-5.6-terra
+Reasoning: [medium | high]
+Role: [exploration | review | implementation]
+
+Objective: [one observable workstream outcome]
+Owned scope: [exclusive paths, modules, symbols, issue range, or domain]
+Exclusions: [areas owned by other threads]
+Inputs: [requirements, evidence, constraints]
+Permissions: [read-only | explicit workspace-write ownership]
+Child policy: Luna subagents are allowed only for bounded deterministic scanning, extraction, or verification in this workstream. Do not create Terra subagents or additional threads. Do not delegate source edits to Luna.
+Required evidence: [paths, symbols, commands, outputs, reproduction]
+Output: Use the requested result schema and include WORKSTREAM.
+Done criteria: [observable completion]
+Failure rule: Return partial or blocked; escalate architecture, conflicts, and cross-scope requirements to the parent.
 ```
 
-## Luna verifier
+## Luna thread
 
 ```text
-Role: luna_verifier
+THREAD_MODE=true
+Worker type: Luna leaf thread
 Requested model: gpt-5.6-luna
-Reasoning: medium
-Objective: Verify [claim or change] with [specific commands or narrow checks].
-Scope: [paths and commands]
-Exclusions: Do not change source files or repair failures.
-Context: [expected behavior and environment notes]
-Permission: Verification-only. Generated caches and test artifacts are acceptable; source edits are not.
-Required evidence: Record exact commands, exit status, and a concise failure excerpt.
-Output: Use the read/review result schema with pass/fail findings.
-Done criteria: Every requested check ran or a concrete blocker is reported.
+Reasoning: [low | medium]
+
+Objective: [exact deterministic inventory, classification, or verification result]
+Scope: [fixed paths, records, commands, or batch]
+Exclusions: [areas to ignore]
+Inputs: [known facts and constraints]
+Permissions: [read-only | verification-only]
+Child policy: No subagents and no additional threads. Escalate ambiguity to the parent.
+Required evidence: [paths, lines, commands, exit status]
+Output: Use the requested result schema and include WORKSTREAM.
+Done criteria: [observable list, count, table, or completed checks]
+Failure rule: Return partial or blocked; never infer missing facts.
+```
+
+## Direct Luna scanner subagent
+
+```text
+THREAD_MODE=false
+Prefer luna_scanner; otherwise use a built-in read-only agent. Requested model: gpt-5.6-luna, reasoning: low.
+
+Objective: [exact inventory, extraction, or classification result]
+Scope: [paths/modules/diff]
+Exclusions: [areas to ignore]
+Permissions: Read-only. Do not modify files or spawn subagents.
+Required evidence: Cite each result with file path and symbol or line when available.
+Done criteria: [observable list, count, table, or completed checklist]
+Failure rule: Mark partial or blocked. Do not infer missing facts.
+```
+
+## Direct Luna verifier subagent
+
+```text
+THREAD_MODE=false
+Prefer luna_verifier; otherwise use a built-in verification agent. Requested model: gpt-5.6-luna, reasoning: medium.
+
+Objective: Verify [claim/change] using [specific commands].
+Scope: [owned paths and commands]
+Permissions: Verification-only. Do not edit source or spawn subagents.
+Required evidence: Exact commands, exit status, and concise failure evidence.
+Done criteria: Every requested check is run or a concrete blocker is reported.
 Failure rule: Never convert an unrun check into a pass.
 ```
 
-## Terra explorer
+## Direct Terra subagent
 
 ```text
-Role: terra_explorer
-Requested model: gpt-5.6-terra
-Reasoning: medium
-Objective: Trace and explain [behavior, problem, or impact].
-Scope: [entry points, layers, paths, or diff]
-Exclusions: Do not modify files or decide the final architecture.
-Context: [symptoms, logs, issue, and constraints]
-Permission: Read-only.
-Required evidence: Trace the real execution or data path and cite files, symbols, and commands.
-Output: Use the read/review result schema and separate facts, inference, and uncertainty.
-Done criteria: Owning code paths, cause candidates, impact, and unknowns are mapped.
-Failure rule: Do not present a hypothesis as confirmed without evidence.
-```
+THREAD_MODE=false
+Prefer [terra_explorer | terra_reviewer | terra_worker]. Requested model: gpt-5.6-terra, reasoning: [medium | high].
 
-## Terra reviewer
-
-```text
-Role: terra_reviewer
-Requested model: gpt-5.6-terra
-Reasoning: high
-Objective: Review [diff, plan, or implementation] for [correctness, security, tests, or compatibility].
-Scope: [branch, diff, paths, and requirements]
-Exclusions: Avoid style-only feedback unless it hides a functional risk. Do not modify files.
-Context: [acceptance criteria, threat model, and compatibility requirements]
-Permission: Read-only.
-Required evidence: Give a concrete reproduction, counterexample, code path, or missing test for every material finding.
-Output: Use the read/review result schema ordered by severity.
-Done criteria: Material risks are identified or an evidence-backed no-finding result is returned.
-Failure rule: State low confidence explicitly and do not inflate severity.
-```
-
-## Terra worker
-
-```text
-Role: terra_worker
-Requested model: gpt-5.6-terra
-Reasoning: medium
-Objective: Implement [bounded change].
-Owned paths and symbols: [exclusive ownership]
-Out of scope: [everything not to change]
-Context: [design decision, acceptance criteria, and relevant findings]
-Permission: Workspace write only within owned paths. Do not edit another worker's files.
-Required evidence: Explain changed behavior and run [targeted checks].
-Output: Use the implementation result schema.
-Done criteria: [observable behavior] passes [tests or checks].
-Failure rule: Stop and report a blocker when the correct solution requires out-of-scope or conflicting edits.
+Objective: [bounded outcome]
+Owned scope: [paths, symbols, diff]
+Exclusions: [out-of-scope work]
+Permissions: [read-only | explicit workspace-write ownership]
+Child policy: Do not spawn subagents or threads.
+Required evidence: [paths, symbols, commands, tests]
+Done criteria: [observable completion]
+Failure rule: Stop and report partial or blocked when correct work requires conflicting or out-of-scope changes.
 ```
