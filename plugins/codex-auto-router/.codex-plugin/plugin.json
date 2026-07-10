@@ -1,7 +1,7 @@
 {
   "name": "codex-auto-router",
-  "version": "2.4.0",
-  "description": "Routes Codex work to explicitly named, model-pinned Terra, Spark, and Luna custom agents, preferring GPT-5.3-Codex-Spark for text scanning with GPT-5.6 Luna fallback, plus nested helpers, Git worktree isolation, and mandatory parent review.",
+  "version": "2.5.0",
+  "description": "Routes Codex work to explicitly named, model-pinned Terra, Spark, and Luna custom agents using concrete self-contained delegation briefs with explicit scope, outputs, acceptance criteria, evidence, dependency rules, worktree isolation, fallback handling, and mandatory parent review.",
   "author": {
     "name": "tarou-imokenpi",
     "url": "https://github.com/tarou-imokenpi"
@@ -14,6 +14,7 @@
     "subagents",
     "threads",
     "orchestration",
+    "delegation-contracts",
     "spark",
     "worktree",
     "review",
@@ -23,16 +24,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Auto Router",
-    "shortDescription": "Route work to Terra, Spark, and Luna agents",
-    "longDescription": "Mention Auto Router and describe only the outcome. The Sol or Terra parent uses exact named custom agents, prefers GPT-5.3-Codex-Spark for bounded text scanning, falls back to GPT-5.6 Luna when Spark is unavailable or unsuitable, isolates conflicting writes with Git worktrees, and reviews every result before integration.",
+    "shortDescription": "Route concrete work briefs to specialized agents",
+    "longDescription": "Mention Auto Router and describe only the desired outcome. The Sol or Terra parent gathers the relevant source of truth, creates concrete non-overlapping Delegation Brief v1 contracts, routes exact model-pinned Terra, Spark, and Luna agents, isolates conflicting writes, waits for dependencies, and integrates only evidence-backed accepted results.",
     "developerName": "tarou-imokenpi",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/tarou-imokenpi/codex-auto-router",
     "defaultPrompt": [
-      "Analyze this repository with model-pinned Terra agents and Spark-first scanners, falling back to Luna only when Spark is unavailable.",
-      "Implement this issue with named Terra workers, isolated worktrees where needed, and parent review.",
-      "Process this large task set in exact named custom-agent threads and report every Spark-to-Luna fallback reason."
+      "Analyze this repository with concrete evidence-backed workstream briefs and model-pinned Terra agents plus Spark-first scanners.",
+      "Implement this issue by defining exact ownership, acceptance criteria, validation commands, isolated worktrees where needed, and parent review.",
+      "Process this large task set in dependency-aware waves; give every named agent a self-contained brief and integrate only accepted results."
     ]
   },
   "license": "MIT"
