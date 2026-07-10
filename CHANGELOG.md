@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.0
+
+- Corrected the orchestration model to match current Codex documentation: visible worker threads are spawned subagent threads, not a separate top-level thread type with prompt-only model selection.
+- Required exact custom-agent names (`terra_explorer`, `terra_reviewer`, `terra_worker`, `luna_scanner`, `luna_verifier`) for deterministic model routing.
+- Removed silent fallback to built-in or generic agents when Terra or Luna was requested, preventing accidental Sol inheritance.
+- Added mandatory preflight and post-spawn verification of custom-agent identity and expected model.
+- Set parent profiles and installers to `agents.max_depth = 2` so Terra agents can spawn named Luna children when explicitly allowed.
+- Updated Terra agent instructions to spawn only exact Luna custom agents and updated Luna agents as strict leaves.
+- Made Custom Agent installation mandatory rather than optional and added cross-platform verification scripts.
+- Updated installers to preserve existing config, back it up, and safely add or raise `[agents] max_depth` while retaining higher existing values.
+- Updated documentation, contracts, examples, and troubleshooting for parent-model inheritance and session reload requirements.
+
 ## 2.2.2
 
 - Added mandatory Git worktree isolation when multiple threads may conflict or mutate shared repository state.
