@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.0
+
+- Added the model-pinned `spark_scanner` custom agent using `gpt-5.3-codex-spark`.
+- Made Spark the preferred scanner for bounded text-only search, inventory, extraction, classification, and compact repository maps.
+- Added explicit runtime fallback to the model-pinned `luna_scanner` when Spark is unavailable, unsupported, unsuitable, fails to start, hits preview capacity or rate limits, or surfaces an unexpected model.
+- Required the parent or Terra agent to record the fallback reason and actual agent/model identity.
+- Prevented silent mixing of partial Spark output with Luna replacement output.
+- Updated Terra agents to prefer `spark_scanner`, use `luna_scanner` only as scanner fallback, and keep `luna_verifier` for verification.
+- Added Spark installation checks and CI invariants while treating account/session Spark access as a runtime capability rather than an installation failure.
+
 ## 2.3.0
 
 - Corrected the orchestration model to match current Codex documentation: visible worker threads are spawned subagent threads, not a separate top-level thread type with prompt-only model selection.
