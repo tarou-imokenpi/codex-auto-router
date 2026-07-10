@@ -8,6 +8,7 @@ $Expected = @{
     "terra-explorer.toml" = "gpt-5.6-terra"
     "terra-reviewer.toml" = "gpt-5.6-terra"
     "terra-worker.toml" = "gpt-5.6-terra"
+    "spark-scanner.toml" = "gpt-5.3-codex-spark"
     "luna-scanner.toml" = "gpt-5.6-luna"
     "luna-verifier.toml" = "gpt-5.6-luna"
 }
@@ -50,4 +51,5 @@ if ($Failed) {
 }
 
 Write-Host ""
-Write-Host "Installation files are correct. Restart Codex or start a new task before testing @Auto Router."
+Write-Host "Installation files are correct. Spark account/session availability is checked at runtime; Luna Scanner is the fallback."
+Write-Host "Restart Codex or start a new task before testing @Auto Router."
