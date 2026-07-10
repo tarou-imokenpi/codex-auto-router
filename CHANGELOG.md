@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.2
+
+- Added mandatory Git worktree isolation when multiple threads may conflict or mutate shared repository state.
+- Required the parent to create a common base commit, unique branch, and dedicated worktree for every affected thread.
+- Added worktree metadata, final commit, and dirty-state reporting to thread contracts and parent review.
+- Prevented write-capable threads from sharing the parent checkout or another worker's worktree.
+- Required cross-thread integration and merge-conflict resolution to happen in the parent after thread acceptance.
+- Added safe fallback behavior: potentially conflicting write workstreams run sequentially when worktrees are unavailable.
+- Updated the Terra worker policy to verify its assigned worktree and branch before editing.
+
 ## 2.2.1
 
 - Added a mandatory parent review gate after every Terra or Luna thread completes.
