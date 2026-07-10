@@ -1,7 +1,7 @@
 {
   "name": "codex-auto-router",
-  "version": "2.3.0",
-  "description": "Routes Codex work to explicitly named, model-pinned GPT-5.6 Terra and Luna custom agents, with nested Luna support, Git worktree isolation, and mandatory parent review.",
+  "version": "2.4.0",
+  "description": "Routes Codex work to explicitly named, model-pinned Terra, Spark, and Luna custom agents, preferring GPT-5.3-Codex-Spark for text scanning with GPT-5.6 Luna fallback, plus nested helpers, Git worktree isolation, and mandatory parent review.",
   "author": {
     "name": "tarou-imokenpi",
     "url": "https://github.com/tarou-imokenpi"
@@ -14,6 +14,7 @@
     "subagents",
     "threads",
     "orchestration",
+    "spark",
     "worktree",
     "review",
     "terra",
@@ -22,16 +23,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Auto Router",
-    "shortDescription": "Route work to model-pinned Terra and Luna agents",
-    "longDescription": "Mention Auto Router and describe only the outcome. The Sol or Terra parent spawns exact named custom agents so child threads do not silently inherit Sol, optionally allows Terra to use named Luna helpers at depth 2, isolates conflicting writes with Git worktrees, and reviews every result before integration.",
+    "shortDescription": "Route work to Terra, Spark, and Luna agents",
+    "longDescription": "Mention Auto Router and describe only the outcome. The Sol or Terra parent uses exact named custom agents, prefers GPT-5.3-Codex-Spark for bounded text scanning, falls back to GPT-5.6 Luna when Spark is unavailable or unsuitable, isolates conflicting writes with Git worktrees, and reviews every result before integration.",
     "developerName": "tarou-imokenpi",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/tarou-imokenpi/codex-auto-router",
     "defaultPrompt": [
-      "Analyze this repository with model-pinned Terra and Luna custom agents and report evidence-backed issues.",
+      "Analyze this repository with model-pinned Terra agents and Spark-first scanners, falling back to Luna only when Spark is unavailable.",
       "Implement this issue with named Terra workers, isolated worktrees where needed, and parent review.",
-      "Process this large task set in named custom-agent threads and never fall back to inherited Sol agents."
+      "Process this large task set in exact named custom-agent threads and report every Spark-to-Luna fallback reason."
     ]
   },
   "license": "MIT"
