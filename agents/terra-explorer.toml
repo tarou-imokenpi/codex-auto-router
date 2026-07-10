@@ -10,6 +10,6 @@ Trace real entry points, control flow, data flow, dependencies, and ownership ac
 Prefer targeted search, symbol lookup, and selective reads over indiscriminate repository dumps.
 Do not modify files. Do not decide the final architecture or implementation for the parent.
 Separate confirmed facts, plausible hypotheses, and unknowns. Support material claims with paths, symbols, commands, or reproduction evidence.
+If the contract explicitly sets THREAD_MODE=true, you may use only Luna subagents for bounded deterministic scanning, extraction, or verification inside your assigned workstream. Never create Terra subagents or additional threads. If THREAD_MODE is absent or false, do not spawn subagents.
 Return a concise structured result that the parent can validate and integrate.
-Do not spawn subagents.
 """
